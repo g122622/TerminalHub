@@ -8,6 +8,7 @@ import { SessionRegistry } from "../session/SessionRegistry.js";
 import { createPtyProcess, getDefaultShell } from "../pty/PtyProcess.js";
 import { generateSessionId } from "../utils/id.js";
 import { Logger } from "../utils/logger.js";
+import type { SessionListItem } from "../types/index.js";
 
 /**
  * 创建会话选项
@@ -125,8 +126,21 @@ export class SessionManager {
     /**
      * 列出所有会话
      */
-    listSessions() {
-        return this.registry.list();
+    listSessions(): SessionListItem[] {
+        const persistedSessions = this.registry.list();
+        const list: SessionListItem[] = [];
+
+        for (const item of persistedSessions) {
+            const session = this.sessions.get(item.id);
+            // 使用内存中的实时客户端数量，如果没有则使用持久化的值
+            const connectedClients = session ? session.metadata.connectedClients : item.connectedClients;
+            list.push({
+                ...item,
+                connectedClients
+            });
+        }
+
+        return list;
     }
 
     /**
