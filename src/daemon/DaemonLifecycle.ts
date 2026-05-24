@@ -1,13 +1,14 @@
 import childProcess from "node:child_process";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { ConfigManager, DAEMON_PID_PATH } from "../storage/index.js";
 import { isDaemonRunning } from "../ipc/client.js";
 import { readPidFile, writePidFile, removePidFile, isProcessAlive } from "../utils/pid.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// 兼容 ESM 和 CJS/pkg 环境
+const scriptDir = typeof __dirname !== "undefined"
+    ? __dirname
+    : path.dirname(process.argv[1] || process.cwd());
 
 /**
  * Daemon 生命周期管理
@@ -43,7 +44,7 @@ export class DaemonLifecycle {
      * 启动 Daemon 进程
      */
     async start(): Promise<void> {
-        const daemonScript = path.join(__dirname, "main.js");
+        const daemonScript = path.join(scriptDir, "main.js");
 
         // 使用 detached 模式启动，使子进程成为孤儿进程
         const child = childProcess.spawn(process.execPath, [daemonScript], {
