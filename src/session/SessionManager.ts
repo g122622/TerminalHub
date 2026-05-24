@@ -95,12 +95,14 @@ export class SessionManager {
         // 监听输出
         ptyProcess.onData((data) => {
             outputBuffer.write(data);
-            // TODO: 广播给所有客户端
+            // 广播给所有客户端
+            session.broadcastOutput(data);
         });
 
         // 监听退出
         ptyProcess.onExit((code, signal) => {
             this.logger.info(`会话 ${id} 退出: code=${code}, signal=${signal}`);
+            session.broadcastExit(code, signal);
             this.handleSessionExit(id);
         });
 

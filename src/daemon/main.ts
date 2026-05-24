@@ -75,6 +75,29 @@ async function main(): Promise<void> {
         session.addClient(client);
         session.touch();
 
+        // 订阅会话输出事件，发送给该客户端
+        const outputHandler = (data: string) => {
+            ipcServer.sendToClient(client, "output", data, payload.sessionId);
+        };
+        session.on("output", outputHandler);
+
+        // 订阅会话退出事件
+        const exitHandler = (code: number, signal?: number) => {
+            ipcServer.sendToClient(client, "exit", { code, signal }, payload.sessionId);
+        };
+        session.on("exit", exitHandler);
+
+        // 客户端断开时移除订阅
+        const disconnectHandler = (disconnectedClient: net.Socket) => {
+            if (disconnectedClient === client) {
+                session.off("output", outputHandler);
+                session.off("exit", exitHandler);
+                session.removeClient(client);
+                ipcServer.off("client-disconnect", disconnectHandler);
+            }
+        };
+        ipcServer.on("client-disconnect", disconnectHandler);
+
         // 发送历史输出
         const history = session.outputBuffer.getRecentLines();
         return { history };

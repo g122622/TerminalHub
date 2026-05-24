@@ -1,5 +1,6 @@
 import type { SessionMetadata } from "../types/index.js";
 import type { OutputBuffer } from "./OutputBuffer.js";
+import { EventEmitter } from "node:events";
 
 /**
  * PTY 进程封装接口
@@ -16,13 +17,14 @@ export interface PtyProcess {
 /**
  * 会话实体
  */
-export class Session {
+export class Session extends EventEmitter {
     metadata: SessionMetadata;
     outputBuffer: OutputBuffer;
     ptyProcess: PtyProcess | null = null;
     clients: Set<unknown> = new Set();
 
     constructor(metadata: SessionMetadata, outputBuffer: OutputBuffer) {
+        super();
         this.metadata = metadata;
         this.outputBuffer = outputBuffer;
     }
@@ -55,5 +57,19 @@ export class Session {
      */
     isAlive(): boolean {
         return this.ptyProcess !== null && this.ptyProcess.pid > 0;
+    }
+
+    /**
+     * 广播输出给所有客户端
+     */
+    broadcastOutput(data: string): void {
+        this.emit("output", data);
+    }
+
+    /**
+     * 广播会话退出
+     */
+    broadcastExit(code: number, signal?: number): void {
+        this.emit("exit", code, signal);
     }
 }
